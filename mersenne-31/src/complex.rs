@@ -1,8 +1,12 @@
 use core::fmt::{Display, Formatter};
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+//use core::sync::Exclusive;
 
 use p3_field::{AbstractExtensionField, AbstractField, AbstractionOf, Field, TwoAdicField};
+use rand::Rng;
+use rand::distributions::Standard;
+use rand::prelude::Distribution;
 
 use crate::Mersenne31;
 
@@ -32,6 +36,18 @@ impl<AF: AbstractionOf<Mersenne31>> Mersenne31Complex<AF> {
 
     pub fn imag(&self) -> AF {
         self.parts[1].clone()
+    }
+
+    pub fn conjugate(&self) -> Self {
+        Self::new(self.real(), self.imag().neg())
+    }
+
+    pub fn magnitude(&self) -> AF {
+        self.real()*self.real()+self.imag()*self.imag()
+    }
+
+    pub fn scale(&self,factor:AF)->Self{
+        Self::new(self.real()*factor.clone(),self.imag()*factor.clone())
     }
 }
 
@@ -215,7 +231,7 @@ impl Field for Mersenne31Complex<Mersenne31> {
     type Packing = Self;
 
     fn try_inverse(&self) -> Option<Self> {
-        todo!()
+        Some(self.conjugate().scale(self.magnitude().inverse()))
     }
 }
 
@@ -253,5 +269,11 @@ impl<AF: AbstractField + AbstractionOf<Mersenne31>> AbstractExtensionField<AF>
 
     fn as_base_slice(&self) -> &[AF] {
         &self.parts
+    }
+}
+
+impl Distribution<Mersenne31Complex<Mersenne31>> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Mersenne31Complex<Mersenne31> {
+        Mersenne31Complex::<Mersenne31>::new(rng.gen(),rng.gen())
     }
 }
