@@ -1,7 +1,3 @@
-
-#![feature(generic_const_exprs)]
-#![feature(associated_const_equality)]
-
 use p3_field::{TwoAdicField};
 
 pub fn fft
@@ -12,6 +8,7 @@ pub fn fft
     In-place FFT
     Cooley-Tukey FFT Algorithm on the input 'vals' using the root of unity 'root'
     no bit-reveral is performed
+    TODO: look into eliminating the bit-reversal requirement
      */
     debug_assert!(N.is_power_of_two());
     // get 2^Nth root of unity or inverse root if inverse
@@ -20,8 +17,9 @@ pub fn fft
         .exp_power_of_2((F::TWO_ADICITY as isize  - N.trailing_zeros() as isize) as usize)
     );
     debug_assert!(root.exp_power_of_2(N.trailing_zeros().try_into().unwrap()) == F::ONE);
-    // Cooley-Tukey FFT Algorithm (in-place)
+    // reversed sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
     let rr = (0..N.trailing_zeros()).map(|i|root.exp_power_of_2(i.try_into().unwrap())).rev();
+    // Cooley-Tukey FFT Algorithm (in-place)
     for (i,r) in rr.enumerate(){
         for j in (0..N).step_by(1<<(i+1)) {
             let mut s = F::ONE;
@@ -85,7 +83,9 @@ mod tests_mersenne {
         let mut aa = [F::default();N];
         aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
         let aa_0 = aa.clone();
+        bit_reverse(& mut aa);
         fft::<F,8,false>(& mut aa);
+        bit_reverse(& mut aa);
         fft::<F,8,true>(& mut aa);
         assert_eq!(aa,aa_0);
     }
@@ -112,6 +112,19 @@ mod tests_mersenne {
         fft::<F,8,false>(& mut aa);
         let aa_1 = aa.clone();
         let aa_2 = dft::<F,8,false>(aa_0);
+        assert_eq!(aa_1,aa_2);
+    }
+    #[test]
+    fn test_ifft_idft_random(){
+        const N:usize = 8;
+        let mut rng = rand::thread_rng();
+        let mut aa = [F::default();N];
+        aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
+        let aa_0 = aa.clone();
+        bit_reverse(& mut aa);
+        fft::<F,8,true>(& mut aa);
+        let aa_1 = aa.clone();
+        let aa_2 = dft::<F,8,true>(aa_0);
         assert_eq!(aa_1,aa_2);
     }
 }
