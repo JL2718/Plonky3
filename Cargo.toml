@@ -24,5 +24,5 @@ members = [
     "tensor-pcs",
     "util",
     "uni-stark",
-    "fft",
+    "polynomial",
 ]
