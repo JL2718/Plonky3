@@ -20,18 +20,19 @@ pub fn fft
         .exp_power_of_2((F::TWO_ADICITY as isize  - N.trailing_zeros() as isize) as usize)
     );
     debug_assert!(root.exp_power_of_2(N.trailing_zeros().try_into().unwrap()) == F::ONE);
-    // Cooley-Tukey FFT Algorithm 
-    let mut w = root;
-    for i in 0..N.trailing_zeros(){
+    // Cooley-Tukey FFT Algorithm (in-place)
+    let rr = (0..N.trailing_zeros()).map(|i|root.exp_power_of_2(i.try_into().unwrap())).rev();
+    for (i,r) in rr.enumerate(){
         for j in (0..N).step_by(1<<(i+1)) {
+            let mut s = F::ONE;
             for k in j..j + (1<<i) {
                 let u = vals[k];
-                let v = vals[k + (1<<i)] * w;
+                let v = vals[k + (1<<i)] * s;
                 vals[k] = u + v;
                 vals[k + (1<<i)] = u - v;
+                s *= r;
             }
         }
-        w *= w;        
     }
     // divide by N if inverse
     if INV {
