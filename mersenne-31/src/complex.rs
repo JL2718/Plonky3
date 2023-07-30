@@ -177,7 +177,7 @@ impl<AF: AbstractionOf<Mersenne31>> AbstractField for Mersenne31Complex<AF> {
         Self::new_real(AF::from_canonical_u8(n))
     }
 
-    fn from_canonical_u16(n: u8) -> Self {
+    fn from_canonical_u16(n: u16) -> Self {
         Self::new_real(AF::from_canonical_u16(n))
     }
 

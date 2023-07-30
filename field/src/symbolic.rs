@@ -37,7 +37,7 @@ impl<F: Field, Var: Clone + Debug> AbstractField for SymbolicField<F, Var> {
         Self::Constant(F::from_canonical_u8(n))
     }
 
-    fn from_canonical_u16(n: u8) -> Self {
+    fn from_canonical_u16(n: u16) -> Self {
         Self::Constant(F::from_canonical_u16(n))
     }
 

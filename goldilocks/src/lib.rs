@@ -89,7 +89,7 @@ impl AbstractField for Goldilocks {
         Self::new(u64::from(n))
     }
 
-    fn from_canonical_u16(n: u8) -> Self {
+    fn from_canonical_u16(n: u16) -> Self {
         Self::new(u64::from(n))
     }
 
