@@ -82,7 +82,7 @@ mod tests_mersenne {
     use crate::fft::*;
     use crate::dft::dft;
     #[test]
-    fn test_fft_simple(){
+    fn test_fft_ifft_simple(){
         const N:usize = 8;
         let mut aa = [F::ZERO;N];
         aa[0] = F::ONE;
@@ -92,7 +92,7 @@ mod tests_mersenne {
         assert_eq!(aa,aa_0);
     }
     #[test]
-    fn test_fft_random(){
+    fn test_fft_ifft_random(){
         const N:usize = 8;
         let mut rng = rand::thread_rng();
         let mut aa = [F::default();N];
@@ -103,15 +103,29 @@ mod tests_mersenne {
         assert_eq!(aa,aa_0);
     }
     #[test]
-    fn test_fft_dft_simple(){
+    fn test_fft_dft_simple_0(){
+        const N:usize = 8;
+        let mut aa = [F::ZERO;N];
+        let aa_0 = dft::<F,8,false>(aa);
+        fft::<F,8,false>(& mut aa);
+        assert_eq!(aa,aa_0);
+    }
+    #[test]
+    fn test_fft_dft_simple_1(){
         const N:usize = 8;
         let mut aa = [F::ZERO;N];
         aa[0] = F::ONE;
-        let aa_0 = aa.clone();
+        let aa_0 = dft::<F,8,false>(aa);
         fft::<F,8,false>(& mut aa);
-        let aa_1 = aa.clone();
-        let aa_2 = dft::<F,8,false>(aa_0);
-        assert_eq!(aa_1,aa_2);
+        assert_eq!(aa,aa_0);
+    }
+    #[test]
+    fn test_fft_dft_simple_2(){
+        const N:usize = 8;
+        let mut aa = [F::ONE;N];
+        let aa_0 = dft::<F,8,false>(aa);
+        fft::<F,8,false>(& mut aa);
+        assert_eq!(aa,aa_0);
     }
     #[test]
     fn test_fft_dft_random(){
@@ -119,22 +133,18 @@ mod tests_mersenne {
         let mut rng = rand::thread_rng();
         let mut aa = [F::default();N];
         aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
-        let aa_0 = aa.clone();
+        let aa_0 = dft::<F,8,false>(aa);
         fft::<F,8,false>(& mut aa);
-        let aa_1 = aa.clone();
-        let aa_2 = dft::<F,8,false>(aa_0);
-        assert_eq!(aa_1,aa_2);
+        assert_eq!(aa,aa_0);
     }
     #[test]
     fn test_ifft_idft_random(){
         const N:usize = 8;
         let mut rng = rand::thread_rng();
         let mut aa = [F::default();N];
-        aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
-        let aa_0 = aa.clone();
+        aa.iter_mut().for_each(|a| *a=F::new(rng.gen::<B>(),rng.gen::<B>())); 
+        let aa_0 = dft::<F,8,true>(aa);
         fft::<F,8,true>(& mut aa);
-        let aa_1 = aa.clone();
-        let aa_2 = dft::<F,8,true>(aa_0);
-        assert_eq!(aa_1,aa_2);
+        assert_eq!(aa,aa_0);
     }
 }
