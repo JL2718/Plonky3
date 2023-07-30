@@ -20,6 +20,8 @@ pub fn fft
     // bit-reversal permutation
     bit_reverse_permutation(vals);
     // Cooley-Tukey FFT Algorithm (in-place)
+    //for i in 0..(N.trailing_zeros() as usize) {
+        //let r = root.exp_power_of_2(i);
     for (i,r) in rr.iter().rev().enumerate(){
         for j in (0..N).step_by(1<<(i+1)) {
             let mut s = F::ONE;
@@ -35,7 +37,7 @@ pub fn fft
     // divide by N if inverse
     if INV {
         let inv = F::TWO.exp_u64(N.trailing_zeros() as u64).inverse();
-        for i in 0..(1<<N.trailing_zeros()) {
+        for i in 0..N {
             vals[i] *= inv;
         }
     }
