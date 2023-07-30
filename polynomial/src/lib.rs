@@ -3,6 +3,7 @@
 
 mod dft;
 mod fft;
+mod fp17;
 
 use std::usize;
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
