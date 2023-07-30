@@ -16,7 +16,8 @@ pub fn fft
     );
     debug_assert!(root.exp_power_of_2(N.trailing_zeros() as usize) == F::ONE);
     // rr: sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
-    let rr:Vec<F>=(0..N.trailing_zeros()).scan(root,|ri,_|{*ri*=*ri;Some(*ri)}).collect();
+    let rr:Vec<F>=(0..N.trailing_zeros()).scan(root,|ri,_|{let ret=*ri;*ri*=*ri;Some(ret)}).collect();
+    //let rr = (0..N.trailing_zeros()).map(|i|root.exp_power_of_2(i.try_into().unwrap()));
     // bit-reversal permutation
     bit_reverse_permutation(vals);
     // Cooley-Tukey FFT Algorithm (in-place)
@@ -36,7 +37,7 @@ pub fn fft
     }
     // divide by N if inverse
     if INV {
-        let inv = F::TWO.exp_u64(N.trailing_zeros() as u64).inverse();
+        let inv = F::TWO.exp_u64(N.trailing_zeros().try_into().unwrap()).inverse();
         for i in 0..N {
             vals[i] *= inv;
         }
