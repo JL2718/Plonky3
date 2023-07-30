@@ -8,11 +8,11 @@ use std::usize;
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use core::fmt::Debug;
 
-use p3_field::{AbstractField};
+use p3_field::{TwoAdicField,AbstractField};
 
 
-pub trait AbstractPolynomial<F: AbstractField,N:usize>:
-    + Default
+pub trait AbstractPolynomial<F: AbstractField>:
+    Default
     + Clone
     + Add<Output = Self>
     + AddAssign
@@ -25,44 +25,18 @@ pub trait AbstractPolynomial<F: AbstractField,N:usize>:
 {
 }
 
-pub trait AbstractCyclicPolynomial<F: AbstractField,N:usize>:
-    AbstractPolynomial<F,N> + Sized
-{
-    vals: [F;N]
-    fn new(vals: [F;N]) -> Self {
-        Self { vals }
-    }
+pub trait AbstractCyclicPolynomial<F: TwoAdicField,const N:usize>:
+    AbstractPolynomial<F> + Sized
+{   
+    fn new(vals: [F;N]) -> Self;
+    fn default() -> Self;
     fn coefficients(self) -> CyclicPolynomialCoefficients<F,N>;
     fn evaluations(self) -> CyclicPolynomialEvaluations<F,N>;
-}
-
-impl <F: AbstractField,N:usize> Default for AbstractCyclicPolynomial<F,N> {
-    fn default() -> Self {
-        Self::new([F::ZERO;N])
-    }
-}
-
-impl<F: AbstractField,N:usize> Add for AbstractCyclicPolynomial<F,N> {
-    type Output = Self;
-
     fn add(self, rhs: Self) -> Self {
         let mut result = self.clone();
         result += rhs;
         result
     }
-}
-
-impl<F: AbstractField,N:usize> AddAssign for AbstractCyclicPolynomial<F,N> {
-    fn add_assign(&mut self, rhs: Self) {
-        for i in 0..N {
-            self.vals[i] += rhs.vals[i];
-        }
-    }
-}
-
-impl<F: AbstractField,N:usize> Sub for AbstractCyclicPolynomial<F,N> {
-    type Output = Self;
-
     fn sub(self, rhs: Self) -> Self {
         let mut result = self.clone();
         result -= rhs;
@@ -70,37 +44,46 @@ impl<F: AbstractField,N:usize> Sub for AbstractCyclicPolynomial<F,N> {
     }
 }
 
-impl<F: AbstractField,N:usize> SubAssign for AbstractCyclicPolynomial<F,N> {
+
+//#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Default)]
+pub struct CyclicPolynomialCoefficients<F: TwoAdicField,const N:usize>
+{
+    vals: [F;N]
+}
+
+impl <F: TwoAdicField,const N:usize> CyclicPolynomialCoefficients<F,N> {
+    fn new(vals: [F;N]) -> Self {
+        Self { vals }
+    }
+    fn default() -> Self {
+        Self::new([F::ZERO;N])
+    }
+    fn clone(&self) -> Self {
+        Self::new(self.vals.clone())
+    }
+    fn from_vec(vals:Vec<F>) -> Self {
+        let mut result = Self::default();
+        for (i,v) in vals.iter().enumerate() {
+            result.vals[i%N] += *v;
+        }
+        return result;
+    }
+    fn add_assign(&mut self, rhs: Self) {
+        for i in 0..N {
+            self.vals[i] += rhs.vals[i];
+        }
+    }
     fn sub_assign(&mut self, rhs: Self) {
         for i in 0..N {
             self.vals[i] -= rhs.vals[i];
         }
     }
-}
-
-impl<F: AbstractField,N:usize> Neg for AbstractCyclicPolynomial<F,N> {
-    type Output = Self;
-
     fn neg(self) -> Self {
         let mut result = self.clone();
         for i in 0..N {
             result.vals[i] = -result.vals[i];
         }
         result
-    }
-}
-
-
-#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Default)]
-pub struct CyclicPolynomialCoefficients<F: AbstractField,N:usize>:
-    AbstractCyclicPolynomial<F,N>
-{
-    fn new(vals: !vec<F>) -> Self {
-        let mut result = Self::default();
-        for i,v in vals.iter().enumerate() {
-            result.vals[i%N] += v;
-        }
-        return result;
     }
 
     fn eval(&self, x: F) -> F {
@@ -119,18 +102,18 @@ pub struct CyclicPolynomialCoefficients<F: AbstractField,N:usize>:
 
     fn evaluations(&self) -> CyclicPolynomialEvaluations<F,N> {
         let mut vals = self.vals.clone();
-        fft.fft(&mut vals);
+        fft::fft::<F,N,true>(&mut vals);
         let result = CyclicPolynomialEvaluations::new(vals);
         return result;
     }
 
 }
 
-impl<F: AbstractField,N:usize> Mul for CyclicPolynomialCoefficients<F,N> {
+impl<F: TwoAdicField,const N:usize> Mul for CyclicPolynomialCoefficients<F,N> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
-        let mut result = Self::zero();
+        let mut result = Self::default();
         for i in 0..N {
             for j in 0..N {
                 result.vals[(i + j) % N] += self.vals[i]*rhs.vals[j];
@@ -140,30 +123,60 @@ impl<F: AbstractField,N:usize> Mul for CyclicPolynomialCoefficients<F,N> {
     }
 }
 
-impl<F: AbstractField,N:usize> MulAssign for CyclicPolynomialCoefficients<F,N> {
+impl<F: TwoAdicField,const N:usize> MulAssign for CyclicPolynomialCoefficients<F,N> {
     fn mul_assign(&mut self, rhs: Self) {
-        let mut result = self.clone();
-        *self = result*rhs;
+        *self = self.clone()*rhs;
     }
 }
 
-#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Default)]
-pub struct CyclicPolynomialEvaluations<F: AbstractField,N:usize>:
-    AbstractCyclicPolynomial<F,N>
+//#[derive(PartialEq, Eq, Hash, Copy, Clone, Debug, Default)]
+pub struct CyclicPolynomialEvaluations<F: TwoAdicField,const N:usize>
 {
+    vals: [F;N],
+}
+impl <F: TwoAdicField,const N:usize> CyclicPolynomialEvaluations<F,N>
+{
+    fn vals(&self) -> &[F;N] {
+        return &self.vals;
+    }
+    fn new(vals: [F;N]) -> Self {
+        Self { vals }
+    }
+    fn default() -> Self {
+        Self::new([F::ZERO;N])
+    }
+    fn clone(&self) -> Self {
+        Self::new(self.vals.clone())
+    }
     fn evaluations(&self) -> &Self {
         return self;
     }
-
     fn coefficients(&self) -> CyclicPolynomialCoefficients<F,N> {
         let mut vals = self.vals.clone();
-        fft.fft(&mut vals,inverse=true);
+        fft::fft::<F,N,false>(&mut vals);
         let result = CyclicPolynomialCoefficients::new(vals);
         return result;
     }
+    fn add_assign(&mut self, rhs: Self) {
+        for i in 0..N {
+            self.vals[i] += rhs.vals[i];
+        }
+    }
+    fn sub_assign(&mut self, rhs: Self) {
+        for i in 0..N {
+            self.vals[i] -= rhs.vals[i];
+        }
+    }
+    fn neg(self) -> Self {
+        let mut result = self.clone();
+        for i in 0..N {
+            result.vals[i] = -result.vals[i];
+        }
+        result
+    }
 }
 
-impl<F: AbstractField,N:usize> Mul for CyclicPolynomialEvaluations<F,N> {
+impl<F: TwoAdicField,const N:usize> Mul for CyclicPolynomialEvaluations<F,N> {
     type Output = Self;
 
     fn mul(self, rhs: Self) -> Self {
@@ -175,7 +188,7 @@ impl<F: AbstractField,N:usize> Mul for CyclicPolynomialEvaluations<F,N> {
     }
 }
 
-impl<F: AbstractField,N:usize> MulAssign for CyclicPolynomialEvaluations<F,N> {
+impl<F: TwoAdicField,const N:usize> MulAssign for CyclicPolynomialEvaluations<F,N> {
     fn mul_assign(&mut self, rhs: Self) {
         for i in 0..N {
             self.vals[i] *= rhs.vals[i];
