@@ -17,12 +17,9 @@ pub fn fft
     debug_assert!(root.exp_power_of_2(N.trailing_zeros() as usize) == F::ONE);
     // rr: sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
     let rr:Vec<F>=(0..N.trailing_zeros()).scan(root,|ri,_|{let ret=*ri;*ri*=*ri;Some(ret)}).collect();
-    //let rr = (0..N.trailing_zeros()).map(|i|root.exp_power_of_2(i.try_into().unwrap()));
     // bit-reversal permutation
-    bit_reverse_permutation(vals);
+    permute(vals);
     // Cooley-Tukey FFT Algorithm (in-place)
-    //for i in 0..(N.trailing_zeros() as usize) {
-        //let r = root.exp_power_of_2(i);
     for (i,r) in rr.iter().rev().enumerate(){
         for j in (0..N).step_by(1<<(i+1)) {
             let mut s = F::ONE;
@@ -57,7 +54,7 @@ const fn static_assert_power_of_two<const N:usize>(){
     assert!(N.is_power_of_two(), "array size must be a power of two");
 }
 
-pub fn bit_reverse_permutation
+pub fn permute
 <F:TwoAdicField,const N:usize>
 (vals:& mut [F;N]){
     /*
@@ -70,82 +67,5 @@ pub fn bit_reverse_permutation
         if i < j {
             vals.swap(i,j);
         }
-    }
-}
-
-#[cfg(test)]
-mod tests_mersenne {
-    use p3_field::AbstractField;
-    use p3_mersenne_31::{Mersenne31,Mersenne31Complex};
-    use rand::Rng;
-    type B = Mersenne31;
-    type F = Mersenne31Complex<Mersenne31>;
-    use crate::fft::*;
-    use crate::dft::dft;
-    #[test]
-    fn test_fft_ifft_simple(){
-        const N:usize = 8;
-        let mut aa = [F::ZERO;N];
-        aa[0] = F::ONE;
-        let aa_0 = aa.clone();
-        fft::<F,8,false>(& mut aa);
-        fft::<F,8,true>(& mut aa);
-        assert_eq!(aa,aa_0);
-    }
-    #[test]
-    fn test_fft_ifft_random(){
-        const N:usize = 8;
-        let mut rng = rand::thread_rng();
-        let mut aa = [F::default();N];
-        aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
-        let aa_0 = aa.clone();
-        fft::<F,8,false>(& mut aa);
-        fft::<F,8,true>(& mut aa);
-        assert_eq!(aa,aa_0);
-    }
-    #[test]
-    fn test_fft_dft_simple_0(){
-        const N:usize = 8;
-        let mut aa = [F::ZERO;N];
-        let aa_0 = dft::<F,8,false>(aa);
-        fft::<F,8,false>(& mut aa);
-        assert_eq!(aa,aa_0);
-    }
-    #[test]
-    fn test_fft_dft_simple_1(){
-        const N:usize = 8;
-        let mut aa = [F::ZERO;N];
-        aa[0] = F::ONE;
-        let aa_0 = dft::<F,8,false>(aa);
-        fft::<F,8,false>(& mut aa);
-        assert_eq!(aa,aa_0);
-    }
-    #[test]
-    fn test_fft_dft_simple_2(){
-        const N:usize = 8;
-        let mut aa = [F::ONE;N];
-        let aa_0 = dft::<F,8,false>(aa);
-        fft::<F,8,false>(& mut aa);
-        assert_eq!(aa,aa_0);
-    }
-    #[test]
-    fn test_fft_dft_random(){
-        const N:usize = 8;
-        let mut rng = rand::thread_rng();
-        let mut aa = [F::default();N];
-        aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
-        let aa_0 = dft::<F,8,false>(aa);
-        fft::<F,8,false>(& mut aa);
-        assert_eq!(aa,aa_0);
-    }
-    #[test]
-    fn test_ifft_idft_random(){
-        const N:usize = 8;
-        let mut rng = rand::thread_rng();
-        let mut aa = [F::default();N];
-        aa.iter_mut().for_each(|a| *a=F::new(rng.gen::<B>(),rng.gen::<B>())); 
-        let aa_0 = dft::<F,8,true>(aa);
-        fft::<F,8,true>(& mut aa);
-        assert_eq!(aa,aa_0);
     }
 }

@@ -1,9 +1,9 @@
 #![feature(generic_const_exprs)]
 #![feature(associated_const_equality)]
 
-mod dft;
-mod fft;
-mod fp17;
+pub mod dft;
+pub mod fft;
+pub mod fp17;
 
 use std::usize;
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
