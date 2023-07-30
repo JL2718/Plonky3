@@ -1,54 +1,64 @@
 use p3_field::{TwoAdicField};
 
 pub fn fft
-<F:TwoAdicField,const N:usize,const INV:bool>
-(vals:&mut [F;N])
+<F:TwoAdicField,const N:usize>
+(vals:&mut [F;N],root:Option<F>,inverse:Option<bool>)
 {
     /*
     In-place FFT
     Cooley-Tukey FFT Algorithm on the input 'vals' using the root of unity 'root'
-    no bit-reveral is performed
     TODO: look into eliminating the bit-reversal requirement
-     */
-    debug_assert!(N.is_power_of_two());
-    // get 2^Nth root of unity or inverse root if inverse
-    let root:F = (|r:F|if INV {r.inverse()} else {r})(
-        F::power_of_two_generator()
-        .exp_power_of_2((F::TWO_ADICITY as isize  - N.trailing_zeros() as isize) as usize)
+    */
+    const _: () = assert!(N.is_power_of_two(), "array size must be a power of two");
+    const LN:usize=N.trailing_zeros() as usize;
+    // root: 2^Nth root of unity or inverse root if inverse
+    let root:F = (|r:F|if inverse {r.inverse()} else {r})(
+        root or F::power_of_two_generator().exp_power_of_2((F::TWO_ADICITY as isize  - LN as isize) as usize)
     );
-    debug_assert!(root.exp_power_of_2(N.trailing_zeros().try_into().unwrap()) == F::ONE);
-    // reversed sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
-    let rr = (0..N.trailing_zeros()).map(|i|root.exp_power_of_2(i.try_into().unwrap())).rev();
+    debug_assert!(root.exp_power_of_2(LN) == F::ONE);
+    // rr: sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
+    let rr:[F;LN]=(0..LN).scan(root,|ri,_|{ri*=ri;Some(*ri)}).collect::<Vec<F>>().try_into().unwrap();
+    // bit-reversal permutation
+    bit_reverse_permutation(&vals);
     // Cooley-Tukey FFT Algorithm (in-place)
-    for (i,r) in rr.enumerate(){
-        for j in (0..N).step_by(1<<(i+1)) {
+    for (i,r) in rr.iter().rev().enumerate(){
+        for j in (0..(1<<LN)).step_by(1<<(i+1)) {
             let mut s = F::ONE;
             for k in j..j + (1<<i) {
                 let u = vals[k];
                 let v = vals[k + (1<<i)] * s;
                 vals[k] = u + v;
                 vals[k + (1<<i)] = u - v;
-                s *= r;
+                s *= *r;
             }
         }
     }
     // divide by N if inverse
-    if INV {
-        let inv = F::TWO.exp_u64(N.trailing_zeros().try_into().unwrap()).inverse();
-        for i in 0..N {
+    if inverse {
+        let inv = F::TWO.exp_u64(LN as u64).inverse();
+        for i in 0..(1<<LN) {
             vals[i] *= inv;
         }
     }
 }
 
-pub fn bit_reverse
+pub const fn root_of_unity<F:TwoAdicField,N>()->F{
+    F::power_of_two_generator()
+    .exp_power_of_2((F::TWO_ADICITY as isize  - n.trailing_zeros() as isize) as usize)
+}
+
+ pub core::num::reverse_bits<N:usize>(v:usize){
+    return v.reverse_bits() >> (usize::BITS - N.trailing_zeros());
+}
+
+pub fn bit_reverse_permutation
 <F:TwoAdicField,const N:usize>
 (vals:& mut [F;N]){
     /*
         Bit-reversal permutation
         Rearrange the input 'vals' in bit-reversal order
      */
-    debug_assert!(N.is_power_of_two());
+    const _: () = assert!(N.is_power_of_two(), "array size must be a power of two");
     for i in 0..N {
         let j = i.reverse_bits() >> (usize::BITS - N.trailing_zeros());
         if i < j {
