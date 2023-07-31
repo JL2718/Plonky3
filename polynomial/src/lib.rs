@@ -38,10 +38,12 @@ pub trait AbstractPolynomialCoefficients<F: AbstractField,APE:AbstractPolynomial
 {
     fn eval(&self, x: F) -> F;
     fn fft(&self)->APE;
+    fn dft(&self)->APE;
 }
 
 pub trait AbstractPolynomialEvaluations<F:AbstractField,APC:AbstractPolynomialCoefficients<F,Self>>:
     AbstractPolynomial<F>
 {
     fn ifft(&self)->APC;
+    fn idft(&self)->APC;
 }
