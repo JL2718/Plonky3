@@ -1,6 +1,6 @@
 use p3_field::TwoAdicField;
 
-pub fn fft
+pub fn _fft
 <F:TwoAdicField,const N:usize,const INV:bool>
 (vals:&mut [F;N])
 {
@@ -39,6 +39,13 @@ pub fn fft
             vals[i] *= inv;
         }
     }
+}
+
+pub fn fft<F:TwoAdicField,const N:usize>(vals:&mut [F;N]){
+    _fft::<F,N,false>(vals);
+}
+pub fn ifft<F:TwoAdicField,const N:usize>(vals:&mut [F;N]){
+    _fft::<F,N,true>(vals);
 }
 
 pub fn root_of_unity<F:TwoAdicField,const N:usize>()->F{

@@ -1,6 +1,6 @@
-use p3_field::{TwoAdicField};
+use p3_field::TwoAdicField;
 
-pub fn dft
+pub fn _dft
 <F:TwoAdicField,const N:usize,const INV:bool>
 (vals:[F;N])->[F;N]
 {
@@ -30,6 +30,15 @@ pub fn dft
     ret
 }
 
+pub fn dft
+<F:TwoAdicField,const N:usize>
+(vals:[F;N])->[F;N]
+{_dft::<F,N,false>(vals)}
+
+pub fn idft
+<F:TwoAdicField,const N:usize>
+(vals:[F;N])->[F;N]
+{_dft::<F,N,true>(vals)}
 
 #[cfg(test)]
 mod tests_mersenne {
@@ -48,8 +57,8 @@ mod tests_mersenne {
         aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
         //let mut aa = [F::ZERO;N];
         //aa[0] = F::ONE;
-        let tt = dft::<F,8,false>(aa);
-        let aa_t = dft::<F,8,true>(tt);
+        let tt = _dft::<F,8,false>(aa);
+        let aa_t = _dft::<F,8,true>(tt);
         assert_eq!(aa,aa_t);
     }
 }
