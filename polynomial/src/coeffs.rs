@@ -6,13 +6,13 @@ use rand::distributions::{Standard,Distribution};
 use p3_field::{TwoAdicField,AbstractField};
 
 use crate::evals::CyclicPolynomialEvaluations;
-use crate::fft::fft;
+use crate::{fft,dft};
 use crate::{AbstractPolynomial,AbstractCyclicPolynomial,AbstractPolynomialCoefficients,AbstractPolynomialEvaluations};
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
 pub struct CyclicPolynomialCoefficients<F: TwoAdicField,const N:usize>
 {
-    vals: [F;N]
+    pub vals: [F;N]
 }
 
 impl <F: TwoAdicField,const N:usize> CyclicPolynomialCoefficients<F,N> {
@@ -141,9 +141,12 @@ impl <F: TwoAdicField,const N:usize> AbstractPolynomialCoefficients<F,CyclicPoly
     }
     fn fft(&self) -> CyclicPolynomialEvaluations<F,N> {
         let mut vals = self.vals.clone();
-        fft::<F,N,true>(&mut vals);
+        fft::fft(&mut vals);
         let result = CyclicPolynomialEvaluations::new(vals);
         return result;
     }
-
+    fn dft(&self) -> CyclicPolynomialEvaluations<F,N> {
+        let vals = dft::dft(self.vals);
+        CyclicPolynomialEvaluations::new(vals)
+    }
 }
