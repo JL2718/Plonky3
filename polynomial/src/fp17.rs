@@ -139,6 +139,13 @@ impl AbstractField for Fp17{
     fn multiplicative_group_generator() -> Self {
         Self::new(3)
     }
+    fn from_bool(b: bool) -> Self {
+        if b {
+            Self::ONE
+        } else {
+            Self::ZERO
+        }
+    }
     fn from_canonical_u8(n: u8) -> Self {
         Self::new(u32::from(n))
     }
