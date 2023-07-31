@@ -5,16 +5,16 @@ mod tests_fft_cm31 {
     use rand::Rng;
     type B = Mersenne31;
     type F = Mersenne31Complex<Mersenne31>;
-    use polynomial::fft::{fft,permute};
-    use polynomial::dft::dft;
+    use polynomial::fft::{fft,ifft,permute};
+    use polynomial::dft::{dft,idft};
     #[test]
     fn test_fft_ifft_simple(){
         const N:usize = 8;
         let mut aa = [F::ZERO;N];
         aa[0] = F::ONE;
         let aa_0 = aa.clone();
-        fft::<F,8,false>(& mut aa);
-        fft::<F,8,true>(& mut aa);
+        fft(& mut aa);
+        ifft(& mut aa);
         assert_eq!(aa,aa_0);
     }
     #[test]
@@ -24,16 +24,16 @@ mod tests_fft_cm31 {
         let mut aa = [F::default();N];
         aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
         let aa_0 = aa.clone();
-        fft::<F,8,false>(& mut aa);
-        fft::<F,8,true>(& mut aa);
+        fft(& mut aa);
+        ifft(& mut aa);
         assert_eq!(aa,aa_0);
     }
     #[test]
     fn test_fft_dft_simple_0(){
         const N:usize = 8;
         let mut aa = [F::ZERO;N];
-        let aa_0 = dft::<F,8,false>(aa);
-        fft::<F,8,false>(& mut aa);
+        let aa_0 = dft(aa);
+        fft(& mut aa);
         assert_eq!(aa,aa_0);
     }
     #[test]
@@ -41,16 +41,16 @@ mod tests_fft_cm31 {
         const N:usize = 8;
         let mut aa = [F::ZERO;N];
         aa[0] = F::ONE;
-        let aa_0 = dft::<F,8,false>(aa);
-        fft::<F,8,false>(& mut aa);
+        let aa_0 = dft(aa);
+        fft(& mut aa);
         assert_eq!(aa,aa_0);
     }
     #[test]
     fn test_fft_dft_simple_2(){
         const N:usize = 8;
         let mut aa = [F::ONE;N];
-        let aa_0 = dft::<F,8,false>(aa);
-        fft::<F,8,false>(& mut aa);
+        let aa_0 = dft(aa);
+        fft(& mut aa);
         assert_eq!(aa,aa_0);
     }
     #[test]
@@ -59,8 +59,8 @@ mod tests_fft_cm31 {
         let mut rng = rand::thread_rng();
         let mut aa = [F::default();N];
         aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
-        let aa_0 = dft::<F,8,false>(aa.clone());
-        fft::<F,8,false>(& mut aa);
+        let aa_0 = dft(aa.clone());
+        fft(& mut aa);
         assert_eq!(aa,aa_0);
     }
     #[test]
@@ -69,8 +69,8 @@ mod tests_fft_cm31 {
         let mut rng = rand::thread_rng();
         let mut aa = [F::default();N];
         aa.iter_mut().for_each(|a| *a=F::new(rng.gen::<B>(),rng.gen::<B>())); 
-        let aa_0 = dft::<F,8,true>(aa);
-        fft::<F,8,true>(& mut aa);
+        let aa_0 = idft(aa);
+        ifft(& mut aa);
         assert_eq!(aa,aa_0);
     }
 }
