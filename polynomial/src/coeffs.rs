@@ -1,6 +1,7 @@
 use std::usize;
 use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 use core::fmt::Debug;
+use rand::distributions::{Standard,Distribution};
 
 use p3_field::{TwoAdicField,AbstractField};
 
@@ -114,6 +115,19 @@ impl<F: TwoAdicField,const N:usize> MulAssign for CyclicPolynomialCoefficients<F
 }
 impl <F: TwoAdicField,const N:usize> AbstractPolynomial<F> for CyclicPolynomialCoefficients<F,N> {
 }
+
+impl <F:TwoAdicField, const N: usize> Distribution<CyclicPolynomialCoefficients<F,N>> for Standard where Standard: Distribution<F>
+{
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> CyclicPolynomialCoefficients<F,N> {
+        let mut result = CyclicPolynomialCoefficients::<F,N>::default();
+        for i in 0..N {
+            result.vals[i] = rng.gen();
+        }
+        result
+    }
+}
+
+impl <F:TwoAdicField,const N:usize> AbstractCyclicPolynomial<F,N> for CyclicPolynomialCoefficients<F,N>{}
 
 impl <F: TwoAdicField,const N:usize> AbstractPolynomialCoefficients<F,CyclicPolynomialEvaluations<F,N>> for CyclicPolynomialCoefficients<F,N> {
     fn eval(&self, x: F) -> F {

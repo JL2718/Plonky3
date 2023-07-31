@@ -5,8 +5,7 @@ use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
 
 use p3_field::{AbstractExtensionField, AbstractField, AbstractionOf, Field, TwoAdicField};
 use rand::Rng;
-use rand::distributions::Standard;
-use rand::prelude::Distribution;
+use rand::distributions::{Distribution,Standard};
 
 use crate::Mersenne31;
 
