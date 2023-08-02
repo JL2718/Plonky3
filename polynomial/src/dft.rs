@@ -4,14 +4,11 @@ pub fn _dft
 <F:TwoAdicField,const N:usize,const INV:bool>
 (vals:[F;N])->[F;N]
 {
+    assert!(N.is_power_of_two());
     let root:F = (|r:F|if INV {r.inverse()} else {r})(
-        F::power_of_two_generator()
-        .exp_power_of_2((F::TWO_ADICITY as isize  - N.trailing_zeros() as isize) as usize)
-        //.exp_power_of_2(F::TWO_ADICITY - N.trailing_zeros())
+        F::primitive_root_of_unity(N.trailing_zeros() as usize)
     );
     debug_assert!(root.exp_power_of_2(N.trailing_zeros().try_into().unwrap()) == F::ONE);
-    
-    //roots = (0..1<<N).scan(F::ONE,|ri,i|{ri*=root;ri}).map(|ri|{(0..1<<N).scan(F::ONE,|rij,j|{rij*=ri;rij})});
     
     let mut ret:[F;N] = [F::default();N];
     let mut ri = F::ONE; // root^i
@@ -55,8 +52,6 @@ mod tests_mersenne {
         let mut rng = rand::thread_rng();
         let mut aa = [F::default();N];
         aa.iter_mut().for_each(|a| *a=F::new_real(rng.gen::<B>())); 
-        //let mut aa = [F::ZERO;N];
-        //aa[0] = F::ONE;
         let tt = _dft::<F,8,false>(aa);
         let aa_t = _dft::<F,8,true>(tt);
         assert_eq!(aa,aa_t);

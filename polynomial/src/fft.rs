@@ -9,10 +9,10 @@ pub fn _fft
     Cooley-Tukey FFT Algorithm on the input 'vals' using the root of unity 'root'
     TODO: look into eliminating the bit-reversal requirement
     */
-    static_assert_power_of_two::<N>();
+    assert!(N.is_power_of_two());
     // root: 2^Nth root of unity or inverse root if inverse
     let root:F = (|r:F|if INV {r.inverse()} else {r})(
-        F::power_of_two_generator().exp_power_of_2((F::TWO_ADICITY as isize  - N.trailing_zeros() as isize) as usize)
+        F::primitive_root_of_unity(N.trailing_zeros() as usize)
     );
     debug_assert!(root.exp_power_of_2(N.trailing_zeros() as usize) == F::ONE);
     // rr: sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
@@ -48,19 +48,6 @@ pub fn ifft<F:TwoAdicField,const N:usize>(vals:&mut [F;N]){
     _fft::<F,N,true>(vals);
 }
 
-pub fn root_of_unity<F:TwoAdicField,const N:usize>()->F{
-    static_assert_power_of_two::<N>();
-    F::power_of_two_generator().exp_power_of_2((F::TWO_ADICITY as isize  - N.trailing_zeros() as isize) as usize)
-}
-
-fn reverse_bits<const N:usize>(v:usize)->usize{
-    return v.reverse_bits() >> (usize::BITS - N.trailing_zeros());
-}
-
-const fn static_assert_power_of_two<const N:usize>(){
-    assert!(N.is_power_of_two(), "array size must be a power of two");
-}
-
 pub fn permute
 <F:TwoAdicField,const N:usize>
 (vals:& mut [F;N]){
@@ -68,7 +55,7 @@ pub fn permute
         Bit-reversal permutation
         Rearrange the input 'vals' in bit-reversal order
      */
-    static_assert_power_of_two::<N>();
+    assert!(N.is_power_of_two());
     for i in 0..N {
         let j = i.reverse_bits() >> (usize::BITS - N.trailing_zeros());
         if i < j {

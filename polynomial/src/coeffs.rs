@@ -32,29 +32,6 @@ impl <F: TwoAdicField,const N:usize> Default for CyclicPolynomialCoefficients<F,
         Self::new([F::ZERO;N])
     }
 }
-/*
-impl <F: TwoAdicField,const N:usize> Clone for CyclicPolynomialCoefficients<F,N> {
-    fn clone(&self) -> Self {
-        Self::new(self.vals.clone())
-    }
-}
-impl <F: TwoAdicField,const N:usize> Debug for CyclicPolynomialCoefficients<F,N> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut first = true;
-        for i in 0..N {
-            if !first {
-                write!(f, " + ")?;
-            }
-            first = false;
-            write!(f, "{}", self.vals[i])?;
-            if i > 0 {
-                write!(f, "x^{}", i)?;
-            }
-        }
-        Ok(())
-    }
-} 
-*/
 impl <F: TwoAdicField,const N:usize> AddAssign for CyclicPolynomialCoefficients<F,N> {
     fn add_assign(&mut self, rhs: Self) {
         for i in 0..N {
