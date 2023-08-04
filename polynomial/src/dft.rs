@@ -2,20 +2,18 @@ use p3_field::TwoAdicField;
 
 pub fn _dft<F: TwoAdicField, const N: usize, const INV: bool>(vals: [F; N]) -> [F; N] {
     assert!(N.is_power_of_two());
-    let root: F = (|r: F| if INV { r.inverse() } else { r })(F::primitive_root_of_unity(
-        N.trailing_zeros() as usize,
-    ));
+    let root: F = F::primitive_root_of_unity(N.trailing_zeros() as usize, Some(INV));
     debug_assert!(root.exp_power_of_2(N.trailing_zeros().try_into().unwrap()) == F::ONE);
 
     let mut ret: [F; N] = [F::default(); N];
     let mut ri = F::ONE; // root^i
-    for i in 0..(N) {
+    (0..N).for_each(|i| {
         let mut rij = F::ONE; // root^(i*j)
         let mut sum = F::ZERO;
-        for j in 0..(N) {
+        (0..N).for_each(|j| {
             sum += vals[j] * rij;
             rij *= ri;
-        }
+        });
         ri *= root;
         debug_assert!(rij == F::ONE);
         ret[i] = sum
@@ -26,7 +24,7 @@ pub fn _dft<F: TwoAdicField, const N: usize, const INV: bool>(vals: [F; N]) -> [
             } else {
                 F::ONE
             });
-    }
+    });
     debug_assert!(ri == F::ONE);
     ret
 }

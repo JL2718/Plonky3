@@ -2,14 +2,10 @@
 mod tests_poly_cm31 {
     use p3_field::AbstractField;
     use p3_mersenne_31::{Mersenne31, Mersenne31Complex};
-    use polynomial::{
-        AbstractPolynomialCoefficients,
-        AbstractPolynomialEvaluations,
-    };
+    use polynomial::{AbstractPolynomialCoefficients, AbstractPolynomialEvaluations};
     use rand::Rng;
     type F = Mersenne31Complex<Mersenne31>;
     type PC = polynomial::coeffs::CyclicPolynomialCoefficients<F, 8>;
-    type PE = polynomial::evals::CyclicPolynomialEvaluations<F, 8>;
     #[test]
     fn test_coeff_add_sub() {
         let mut rng = rand::thread_rng();

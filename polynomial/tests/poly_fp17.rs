@@ -1,14 +1,10 @@
 #[cfg(test)]
 mod tests_poly_fp17 {
     use p3_field::AbstractField;
-    use polynomial::{
-        AbstractPolynomialCoefficients,
-        AbstractPolynomialEvaluations,
-    };
+    use polynomial::{AbstractPolynomialCoefficients, AbstractPolynomialEvaluations};
     use rand::Rng;
     type F = polynomial::fp17::Fp17;
     type PC = polynomial::coeffs::CyclicPolynomialCoefficients<F, 8>;
-    type PE = polynomial::evals::CyclicPolynomialEvaluations<F, 8>;
     #[test]
     fn test_coeff_add_sub() {
         let mut rng = rand::thread_rng();

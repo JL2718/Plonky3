@@ -1,8 +1,6 @@
-#![feature(generic_const_exprs)]
-
 use core::fmt;
 use core::fmt::{Debug, Display, Formatter};
-use core::hash::{Hash};
+use core::hash::Hash;
 use core::iter::{Product, Sum};
 use core::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 
@@ -95,7 +93,7 @@ impl MulAssign for Fp17 {
 impl Div for Fp17 {
     type Output = Self;
     fn div(self, rhs: Self) -> Self {
-        Self::new(self.v * rhs.inverse().v)
+        Self::new(self.v.mul(rhs.inverse().v))
     }
 }
 impl DivAssign for Fp17 {

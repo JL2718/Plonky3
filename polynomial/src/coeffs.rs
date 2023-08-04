@@ -2,7 +2,7 @@ use core::fmt::Debug;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::usize;
 
-use p3_field::{AbstractField, TwoAdicField};
+use p3_field::TwoAdicField;
 use rand::distributions::{Distribution, Standard};
 
 use crate::evals::CyclicPolynomialEvaluations;
@@ -126,7 +126,7 @@ impl<F: TwoAdicField, const N: usize>
     fn fft(&self) -> CyclicPolynomialEvaluations<F, N> {
         let mut vals = self.vals;
         fft::fft(&mut vals);
-        
+
         CyclicPolynomialEvaluations::new(vals)
     }
     fn dft(&self) -> CyclicPolynomialEvaluations<F, N> {

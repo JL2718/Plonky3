@@ -2,13 +2,12 @@ use core::fmt::Debug;
 use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::usize;
 
-use p3_field::{AbstractField, TwoAdicField};
+use p3_field::TwoAdicField;
 use rand::distributions::{Distribution, Standard};
 
 use crate::coeffs::CyclicPolynomialCoefficients;
 use crate::{
-    dft, fft, AbstractCyclicPolynomial, AbstractPolynomial,
-    AbstractPolynomialEvaluations,
+    dft, fft, AbstractCyclicPolynomial, AbstractPolynomial, AbstractPolynomialEvaluations,
 };
 
 #[derive(PartialEq, Eq, Hash, Copy, Clone, Debug)]
@@ -111,7 +110,7 @@ impl<F: TwoAdicField, const N: usize>
     fn ifft(&self) -> CyclicPolynomialCoefficients<F, N> {
         let mut vals = self.vals;
         fft::ifft(&mut vals);
-        
+
         CyclicPolynomialCoefficients::new(vals)
     }
     fn idft(&self) -> CyclicPolynomialCoefficients<F, N> {
