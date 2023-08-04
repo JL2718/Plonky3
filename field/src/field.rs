@@ -219,15 +219,10 @@ pub trait TwoAdicField: Field {
 
     /// Returns a primitive root of order `2^bits`.
     #[must_use]
-    fn primitive_root_of_unity(bits: usize,inverse:Option<bool>) -> Self {
+    fn primitive_root_of_unity(bits: usize) -> Self {
         assert!(bits <= Self::TWO_ADICITY);
         let base = Self::power_of_two_generator();
-        let root = base.exp_power_of_2((Self::TWO_ADICITY as isize - bits as isize) as usize);
-        if inverse.unwrap_or(false) {
-            root.inverse()
-        } else {
-            root
-        }
+        base.exp_power_of_2((Self::TWO_ADICITY as isize - bits as isize) as usize)
     }
 }
 

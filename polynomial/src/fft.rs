@@ -8,7 +8,11 @@ pub fn _fft<F: TwoAdicField, const N: usize, const INV: bool>(vals: &mut [F; N])
     */
     assert!(N.is_power_of_two());
     // root: 2^Nth root of unity or inverse root if inverse
-    let root: F = F::primitive_root_of_unity(N.trailing_zeros() as usize, Some(INV));
+    let root: F = if INV {
+        F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse()
+    } else {
+        F::primitive_root_of_unity(N.trailing_zeros() as usize)
+    };
     debug_assert!(root.exp_power_of_2(N.trailing_zeros() as usize) == F::ONE);
     // rr: sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
     let rr: Vec<F> = (0..N.trailing_zeros())

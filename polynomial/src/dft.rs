@@ -2,7 +2,11 @@ use p3_field::TwoAdicField;
 
 pub fn _dft<F: TwoAdicField, const N: usize, const INV: bool>(vals: [F; N]) -> [F; N] {
     assert!(N.is_power_of_two());
-    let root: F = F::primitive_root_of_unity(N.trailing_zeros() as usize, Some(INV));
+    let root: F = if INV {
+        F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse()
+    } else {
+        F::primitive_root_of_unity(N.trailing_zeros() as usize)
+    };
     debug_assert!(root.exp_power_of_2(N.trailing_zeros().try_into().unwrap()) == F::ONE);
 
     let mut ret: [F; N] = [F::default(); N];
