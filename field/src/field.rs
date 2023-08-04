@@ -222,7 +222,7 @@ pub trait TwoAdicField: Field {
     fn primitive_root_of_unity(bits: usize) -> Self {
         assert!(bits <= Self::TWO_ADICITY);
         let base = Self::power_of_two_generator();
-        base.exp_power_of_2((Self::TWO_ADICITY as isize  - bits as isize) as usize)
+        base.exp_power_of_2((Self::TWO_ADICITY as isize - bits as isize) as usize)
     }
 }
 
