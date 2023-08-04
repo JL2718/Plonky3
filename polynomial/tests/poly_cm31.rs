@@ -3,7 +3,7 @@ mod tests_poly_cm31 {
     use p3_field::AbstractField;
     use p3_mersenne_31::{Mersenne31, Mersenne31Complex};
     use polynomial::{
-        AbstractCyclicPolynomial, AbstractPolynomial, AbstractPolynomialCoefficients,
+        AbstractPolynomialCoefficients,
         AbstractPolynomialEvaluations,
     };
     use rand::Rng;

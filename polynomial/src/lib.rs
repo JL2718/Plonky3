@@ -9,7 +9,7 @@ pub mod fft;
 pub mod fp17;
 
 use core::fmt::Debug;
-use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::usize;
 
 use p3_field::{AbstractField, TwoAdicField};

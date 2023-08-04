@@ -1,5 +1,5 @@
 use core::fmt::Debug;
-use core::ops::{Add, AddAssign, Div, Mul, MulAssign, Neg, Sub, SubAssign};
+use core::ops::{Add, AddAssign, Mul, MulAssign, Neg, Sub, SubAssign};
 use std::usize;
 
 use p3_field::{AbstractField, TwoAdicField};
@@ -7,7 +7,7 @@ use rand::distributions::{Distribution, Standard};
 
 use crate::coeffs::CyclicPolynomialCoefficients;
 use crate::{
-    dft, fft, AbstractCyclicPolynomial, AbstractPolynomial, AbstractPolynomialCoefficients,
+    dft, fft, AbstractCyclicPolynomial, AbstractPolynomial,
     AbstractPolynomialEvaluations,
 };
 
@@ -36,7 +36,7 @@ impl<F: TwoAdicField, const N: usize> AddAssign for CyclicPolynomialEvaluations<
 impl<F: TwoAdicField, const N: usize> Add for CyclicPolynomialEvaluations<F, N> {
     type Output = Self;
     fn add(self, rhs: Self) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         result += rhs;
         result
     }
@@ -51,7 +51,7 @@ impl<F: TwoAdicField, const N: usize> SubAssign for CyclicPolynomialEvaluations<
 impl<F: TwoAdicField, const N: usize> Sub for CyclicPolynomialEvaluations<F, N> {
     type Output = Self;
     fn sub(self, rhs: Self) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         result -= rhs;
         result
     }
@@ -59,7 +59,7 @@ impl<F: TwoAdicField, const N: usize> Sub for CyclicPolynomialEvaluations<F, N> 
 impl<F: TwoAdicField, const N: usize> Neg for CyclicPolynomialEvaluations<F, N> {
     type Output = Self;
     fn neg(self) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         for i in 0..N {
             result.vals[i] = -result.vals[i];
         }
@@ -70,7 +70,7 @@ impl<F: TwoAdicField, const N: usize> Neg for CyclicPolynomialEvaluations<F, N> 
 impl<F: TwoAdicField, const N: usize> Mul for CyclicPolynomialEvaluations<F, N> {
     type Output = Self;
     fn mul(self, rhs: Self) -> Self {
-        let mut result = self.clone();
+        let mut result = self;
         result *= rhs;
         result
     }
@@ -109,10 +109,10 @@ impl<F: TwoAdicField, const N: usize>
     for CyclicPolynomialEvaluations<F, N>
 {
     fn ifft(&self) -> CyclicPolynomialCoefficients<F, N> {
-        let mut vals = self.vals.clone();
+        let mut vals = self.vals;
         fft::ifft(&mut vals);
-        let result = CyclicPolynomialCoefficients::new(vals);
-        return result;
+        
+        CyclicPolynomialCoefficients::new(vals)
     }
     fn idft(&self) -> CyclicPolynomialCoefficients<F, N> {
         let vals = dft::idft(self.vals);

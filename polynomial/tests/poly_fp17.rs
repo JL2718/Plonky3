@@ -2,7 +2,7 @@
 mod tests_poly_fp17 {
     use p3_field::AbstractField;
     use polynomial::{
-        AbstractCyclicPolynomial, AbstractPolynomial, AbstractPolynomialCoefficients,
+        AbstractPolynomialCoefficients,
         AbstractPolynomialEvaluations,
     };
     use rand::Rng;

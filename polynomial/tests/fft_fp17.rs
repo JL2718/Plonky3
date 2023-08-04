@@ -4,13 +4,13 @@ mod tests_fft_fp17 {
     use rand::Rng;
     type F = polynomial::fp17::Fp17;
     use polynomial::dft::{dft, idft};
-    use polynomial::fft::{fft, ifft, permute};
+    use polynomial::fft::{fft, ifft};
     #[test]
     fn test_fft_ifft_simple() {
         const N: usize = 8;
         let mut aa = [F::ZERO; N];
         aa[0] = F::ONE;
-        let aa_0 = aa.clone();
+        let aa_0 = aa;
         fft(&mut aa);
         ifft(&mut aa);
         assert_eq!(aa, aa_0);
@@ -21,7 +21,7 @@ mod tests_fft_fp17 {
         let mut rng = rand::thread_rng();
         let mut aa = [F::default(); N];
         aa.iter_mut().for_each(|a| *a = F::new(rng.gen()));
-        let aa_0 = aa.clone();
+        let aa_0 = aa;
         fft(&mut aa);
         ifft(&mut aa);
         assert_eq!(aa, aa_0);
@@ -57,7 +57,7 @@ mod tests_fft_fp17 {
         let mut rng = rand::thread_rng();
         let mut aa = [F::default(); N];
         aa.iter_mut().for_each(|a| *a = F::new(rng.gen()));
-        let aa_0 = dft(aa.clone());
+        let aa_0 = dft(aa);
         fft(&mut aa);
         assert_eq!(aa, aa_0);
     }
