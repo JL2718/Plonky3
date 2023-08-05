@@ -48,11 +48,57 @@ pub fn _fft<F: TwoAdicField, const N: usize, const INV: bool>(vals: &mut [F; N])
     }
 }
 
+pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
+    /*
+    in-place FFT recursion, includes bit-reversal permutation
+    */
+    let n = vals.len();
+    assert!(n.is_power_of_two());
+    // base case
+    if n == 1 {
+        assert!(root == F::ONE);
+        return;
+    }
+    // split problem into even and odd halves
+    let (even, odd) = vals.split_at_mut(n / 2);
+    // exchange values for bit revesal
+    even.iter_mut()
+        .skip(1)
+        .zip(odd.iter_mut())
+        .step_by(2)
+        .for_each(|(e, o)| {
+            std::mem::swap(e, o);
+        });
+    // recurse on halves
+    let rootsq = root * root;
+    rfft(even, rootsq);
+    rfft(odd, rootsq);
+    // compute phases
+    let phases = (0..n / 2).scan(F::ONE, |ri, _| {
+        let ret = *ri;
+        *ri *= root;
+        Some(ret)
+    });
+    // combine halves with phase transformation
+    even.iter_mut()
+        .zip(odd)
+        .zip(phases)
+        .for_each(|((e, o), phase)| {
+            let t = *o * phase;
+            *o = *e - t;
+            *e += t;
+        });
+}
+
 pub fn fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
-    _fft::<F, N, false>(vals);
+    let root = F::primitive_root_of_unity(N.trailing_zeros() as usize);
+    rfft(vals, root);
 }
 pub fn ifft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
-    _fft::<F, N, true>(vals);
+    let root = F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse();
+    rfft(vals, root);
+    vals.iter_mut()
+        .for_each(|v| *v *= F::from_canonical_usize(N).inverse());
 }
 
 pub fn permute<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
