@@ -9,4 +9,5 @@ edition = "2021"
 p3-field = { path= "../field" }
 p3-mersenne-31 = { path = "../mersenne-31" }
 rand = "0.8.5"
+unroll = "0.1.5"
 

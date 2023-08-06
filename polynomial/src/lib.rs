@@ -1,6 +1,8 @@
 #![feature(generic_const_exprs)]
 #![feature(associated_const_equality)]
 #![feature(associated_type_bounds)]
+#![feature(proc_macro_hygiene)]
+#![feature(stmt_expr_attributes)]
 
 pub mod coeffs;
 pub mod dft;

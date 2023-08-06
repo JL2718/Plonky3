@@ -1,5 +1,18 @@
 use p3_field::TwoAdicField;
 
+pub fn fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
+    let root = F::primitive_root_of_unity(N.trailing_zeros() as usize);
+    permute(vals);
+    rfft(vals, root);
+}
+pub fn ifft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
+    let root = F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse();
+    permute(vals);
+    rfft(vals, root);
+    vals.iter_mut()
+        .for_each(|v| *v *= F::from_canonical_usize(N).inverse());
+}
+
 pub fn _fft<F: TwoAdicField, const N: usize, const INV: bool>(vals: &mut [F; N]) {
     /*
     In-place FFT
@@ -61,7 +74,8 @@ pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
     }
     // split problem into even and odd halves
     let (even, odd) = vals.split_at_mut(n / 2);
-    // exchange values for bit revesal
+    // exchange values for bit reversal
+    /*
     even.iter_mut()
         .skip(1)
         .zip(odd.iter_mut())
@@ -69,6 +83,7 @@ pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
         .for_each(|(e, o)| {
             std::mem::swap(e, o);
         });
+    */
     // recurse on halves
     let rootsq = root * root;
     rfft(even, rootsq);
@@ -90,17 +105,6 @@ pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
         });
 }
 
-pub fn fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
-    let root = F::primitive_root_of_unity(N.trailing_zeros() as usize);
-    rfft(vals, root);
-}
-pub fn ifft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
-    let root = F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse();
-    rfft(vals, root);
-    vals.iter_mut()
-        .for_each(|v| *v *= F::from_canonical_usize(N).inverse());
-}
-
 pub fn permute<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
     /*
        Bit-reversal permutation
@@ -112,5 +116,94 @@ pub fn permute<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
         if i < j {
             vals.swap(i, j);
         }
+    }
+}
+
+pub fn rpermute<F: TwoAdicField>(vals: &mut [F]) {
+    // recursive bit-reversal permutation
+    let n = vals.len();
+    assert!(n.is_power_of_two());
+    // base case
+    if n == 2 {
+        return;
+    }
+    // split problem into even and odd halves
+    let (even, odd) = vals.split_at_mut(n / 2);
+    // recurse on halves
+    rpermute(even);
+    rpermute(odd);
+    // exchange middle quarters
+    even.iter_mut()
+        .skip(n / 4)
+        .zip(odd.iter_mut())
+        .for_each(|(e, o)| {
+            std::mem::swap(e, o);
+        });
+    interleave(even);
+    interleave(odd);
+}
+
+pub fn interleave<F: TwoAdicField>(val: &mut [F]) {
+    // recursive interleave of top and bottom half
+    let n = val.len();
+    if n == 2 {
+        return;
+    }
+    let (top, bot) = val.split_at_mut(n / 2);
+    interleave(top);
+    interleave(bot);
+    top.iter_mut()
+        .skip(1)
+        .zip(bot.iter_mut())
+        .step_by(2)
+        .for_each(|(t, b)| {
+            std::mem::swap(t, b);
+        });
+}
+
+#[cfg(test)]
+mod test {
+    use p3_field::AbstractField;
+
+    use super::*;
+    type F = crate::fp17::Fp17;
+    use unroll::unroll_for_loops;
+    #[test]
+    fn test_fft() {
+        let mut vals = [F::ZERO; 8];
+        vals[0] = F::ONE;
+        let vals2 = vals.clone();
+        fft(&mut vals);
+        assert_eq!(vals, [F::ONE; 8]);
+        ifft(&mut vals);
+        assert_eq!(vals, vals2);
+    }
+    #[test]
+    fn test_dft_rfft() {
+        let mut vals = [F::ZERO; 8];
+        vals[0] = F::ONE;
+        let vals2 = vals.clone();
+        fft(&mut vals);
+        ifft(&mut vals);
+        assert_eq!(vals, vals2);
+    }
+    #[test]
+    #[unroll_for_loops]
+    fn test_permute() {
+        for p2 in 1..8 {
+            let mut vals: [F; 1 << p2] = core::array::from_fn(|i| F::from_canonical_usize(i));
+            let mut vals2 = vals.clone();
+            permute(&mut vals);
+            rpermute(&mut vals2);
+            assert_eq!(vals, vals2);
+        }
+    }
+    #[test]
+    fn test_permute_n() {
+        let mut vals: [F; 8] = core::array::from_fn(|i| F::from_canonical_usize(i));
+        let mut vals2 = vals.clone();
+        permute(&mut vals);
+        rpermute(&mut vals2);
+        assert_eq!(vals, vals2);
     }
 }
