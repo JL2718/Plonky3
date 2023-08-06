@@ -2,30 +2,24 @@ use p3_field::TwoAdicField;
 
 pub fn fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
     let root = F::primitive_root_of_unity(N.trailing_zeros() as usize);
-    permute(vals);
+    rpermute(vals);
     rfft(vals, root);
 }
 pub fn ifft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
     let root = F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse();
-    permute(vals);
+    rpermute(vals);
     rfft(vals, root);
     vals.iter_mut()
         .for_each(|v| *v *= F::from_canonical_usize(N).inverse());
 }
 
-pub fn _fft<F: TwoAdicField, const N: usize, const INV: bool>(vals: &mut [F; N]) {
+pub fn _fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N],root: F) {
     /*
     In-place FFT
     Cooley-Tukey FFT Algorithm on the input 'vals' using the root of unity 'root'
-    TODO: look into eliminating the bit-reversal requirement
     */
     assert!(N.is_power_of_two());
     // root: 2^Nth root of unity or inverse root if inverse
-    let root: F = if INV {
-        F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse()
-    } else {
-        F::primitive_root_of_unity(N.trailing_zeros() as usize)
-    };
     debug_assert!(root.exp_power_of_2(N.trailing_zeros() as usize) == F::ONE);
     // rr: sequence of root squares from {2^-1, 2^-2, 2^-4, ..., root=2^-N}
     let rr: Vec<F> = (0..N.trailing_zeros())
@@ -35,8 +29,6 @@ pub fn _fft<F: TwoAdicField, const N: usize, const INV: bool>(vals: &mut [F; N])
             Some(ret)
         })
         .collect();
-    // bit-reversal permutation
-    permute(vals);
     // Cooley-Tukey FFT Algorithm (in-place)
     for (i, r) in rr.iter().rev().enumerate() {
         for j in (0..N).step_by(1 << (i + 1)) {
@@ -48,15 +40,6 @@ pub fn _fft<F: TwoAdicField, const N: usize, const INV: bool>(vals: &mut [F; N])
                 vals[k + (1 << i)] = u - v;
                 s *= *r;
             }
-        }
-    }
-    // divide by N if inverse
-    if INV {
-        let inv = F::TWO
-            .exp_u64(N.trailing_zeros().try_into().unwrap())
-            .inverse();
-        for v in vals {
-            *v *= inv;
         }
     }
 }
@@ -74,16 +57,6 @@ pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
     }
     // split problem into even and odd halves
     let (even, odd) = vals.split_at_mut(n / 2);
-    // exchange values for bit reversal
-    /*
-    even.iter_mut()
-        .skip(1)
-        .zip(odd.iter_mut())
-        .step_by(2)
-        .for_each(|(e, o)| {
-            std::mem::swap(e, o);
-        });
-    */
     // recurse on halves
     let rootsq = root * root;
     rfft(even, rootsq);
@@ -96,7 +69,7 @@ pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
     });
     // combine halves with phase transformation
     even.iter_mut()
-        .zip(odd)
+        .zip(odd.iter_mut())
         .zip(phases)
         .for_each(|((e, o), phase)| {
             let t = *o * phase;
@@ -109,6 +82,7 @@ pub fn permute<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
     /*
        Bit-reversal permutation
        Rearrange the input 'vals' in bit-reversal order
+       This implementation is operation-efficient, in-place, but not cache efficient
     */
     assert!(N.is_power_of_two());
     for i in 0..N {
@@ -120,7 +94,11 @@ pub fn permute<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
 }
 
 pub fn rpermute<F: TwoAdicField>(vals: &mut [F]) {
-    // recursive bit-reversal permutation
+    /*
+    Recursive bit-reversal permutation
+    This implementation is in-place, cache efficient, but not operation-efficient
+    */
+
     let n = vals.len();
     assert!(n.is_power_of_two());
     // base case
@@ -164,28 +142,54 @@ pub fn interleave<F: TwoAdicField>(val: &mut [F]) {
 #[cfg(test)]
 mod test {
     use p3_field::AbstractField;
-
+    use crate::dft::{dft,idft};
     use super::*;
     type F = crate::fp17::Fp17;
     use unroll::unroll_for_loops;
+    use rand::Rng;
     #[test]
-    fn test_fft() {
-        let mut vals = [F::ZERO; 8];
-        vals[0] = F::ONE;
-        let vals2 = vals.clone();
-        fft(&mut vals);
-        assert_eq!(vals, [F::ONE; 8]);
-        ifft(&mut vals);
-        assert_eq!(vals, vals2);
+    #[unroll_for_loops]
+    fn test_fft_all_simple() {
+        for p2 in 1..4 {
+            let mut vals = [F::ZERO; 1<<p2];
+            vals[0] = F::ONE;
+            let vals_0 = vals.clone();
+            let vals_dft = dft(vals);
+            fft(&mut vals);
+            assert_eq!(vals, [F::ONE; 1<<p2]);
+            assert_eq!(vals, vals_dft);
+            let vals_idft = idft(vals);
+            ifft(&mut vals);
+            assert_eq!(vals, vals_0);
+            assert_eq!(vals, vals_idft);
+        }
     }
     #[test]
+    #[unroll_for_loops]
+    fn test_fft_all_random() {
+        for p2 in 1..4 {
+            let mut rng = rand::thread_rng();
+            let mut vals:[F;1<<p2]=rng.gen(); 
+            let vals_0 = vals.clone();
+            let vals_dft = dft(vals);
+            fft(&mut vals);
+            assert_eq!(vals, vals_dft);
+            let vals_idft = idft(vals);
+            ifft(&mut vals);
+            assert_eq!(vals, vals_0);
+            assert_eq!(vals, vals_idft);
+        }
+    }
+    #[test]
+    #[unroll_for_loops]
     fn test_dft_rfft() {
-        let mut vals = [F::ZERO; 8];
-        vals[0] = F::ONE;
-        let vals2 = vals.clone();
-        fft(&mut vals);
-        ifft(&mut vals);
-        assert_eq!(vals, vals2);
+        for p2 in 1..4 {
+            let mut vals = [F::ZERO; 1<<p2];
+            vals[0] = F::ONE;
+            let vals2 = dft(vals);
+            fft(&mut vals);
+            assert_eq!(vals, vals2);
+        }
     }
     #[test]
     #[unroll_for_loops]
@@ -205,5 +209,18 @@ mod test {
         permute(&mut vals);
         rpermute(&mut vals2);
         assert_eq!(vals, vals2);
+    }
+    #[test]
+    #[unroll_for_loops]
+    fn test_fft_ifft_random() {
+        for p2 in 1..4 {
+            let mut rng = rand::thread_rng();
+            let mut aa = [F::default(); 1<<p2];
+            aa.iter_mut().for_each(|a| *a = F::new(rng.gen()));
+            let aa_0 = aa;
+            fft(&mut aa);
+            ifft(&mut aa);
+            assert_eq!(aa, aa_0);
+        }
     }
 }
