@@ -8,7 +8,6 @@ mod tests_fft_fp17 {
     use unroll::unroll_for_loops;
     #[test]
     fn test_fft_ifft_simple() {
-
         const N: usize = 8;
         let mut aa = [F::ZERO; N];
         aa[0] = F::ONE;
@@ -22,7 +21,7 @@ mod tests_fft_fp17 {
     fn test_fft_ifft_random() {
         for p2 in 1..4 {
             let mut rng = rand::thread_rng();
-            let mut aa = [F::default(); 1<<p2];
+            let mut aa = [F::default(); 1 << p2];
             aa.iter_mut().for_each(|a| *a = F::new(rng.gen()));
             let aa_0 = aa;
             fft(&mut aa);

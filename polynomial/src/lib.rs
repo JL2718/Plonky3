@@ -3,6 +3,7 @@
 #![feature(associated_type_bounds)]
 #![feature(proc_macro_hygiene)]
 #![feature(stmt_expr_attributes)]
+#![feature(iter_array_chunks)]
 
 pub mod coeffs;
 pub mod dft;

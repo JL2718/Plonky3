@@ -4,16 +4,18 @@ pub fn fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
     let root = F::primitive_root_of_unity(N.trailing_zeros() as usize);
     rpermute(vals);
     rfft(vals, root);
+    //rfft_dit(vals,root);
 }
 pub fn ifft<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
     let root = F::primitive_root_of_unity(N.trailing_zeros() as usize).inverse();
     rpermute(vals);
     rfft(vals, root);
+    //rfft_dif(vals,root);
     vals.iter_mut()
         .for_each(|v| *v *= F::from_canonical_usize(N).inverse());
 }
 
-pub fn _fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N],root: F) {
+pub fn _fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N], root: F) {
     /*
     In-place FFT
     Cooley-Tukey FFT Algorithm on the input 'vals' using the root of unity 'root'
@@ -46,7 +48,40 @@ pub fn _fft<F: TwoAdicField, const N: usize>(vals: &mut [F; N],root: F) {
 
 pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
     /*
-    in-place FFT recursion, includes bit-reversal permutation
+    in-place FFT DIT recursion without re-ordering transformation
+    */
+    let n = vals.len();
+    assert!(n.is_power_of_two());
+    // base case
+    if n == 1 {
+        assert!(root == F::ONE);
+        return;
+    }
+    // split problem into even and odd halves
+    let (aa, bb) = vals.split_at_mut(n / 2);
+    // recurse on halves
+    let rootsq = root * root;
+    rfft(aa, rootsq);
+    rfft(bb, rootsq);
+    // compute phases
+    let phases = (0..n / 2).scan(F::ONE, |ri, _| {
+        let ret = *ri;
+        *ri *= root;
+        Some(ret)
+    });
+    // combine halves with phase transformation
+    aa.iter_mut()
+        .zip(bb.iter_mut())
+        .zip(phases)
+        .for_each(|((a, b), phase)| {
+            let t = *b * phase;
+            (*a, *b) = (*a + t, *a - t);
+        });
+}
+
+pub fn rfft_dit<F: TwoAdicField>(vals: &mut [F], root: F) {
+    /*
+    in-place FFT DIT recursion
     */
     let n = vals.len();
     assert!(n.is_power_of_two());
@@ -57,25 +92,69 @@ pub fn rfft<F: TwoAdicField>(vals: &mut [F], root: F) {
     }
     // split problem into even and odd halves
     let (even, odd) = vals.split_at_mut(n / 2);
+    // de-interleave evens and odds
+    skipswap(even, odd);
     // recurse on halves
     let rootsq = root * root;
-    rfft(even, rootsq);
-    rfft(odd, rootsq);
+    rfft_dit(even, rootsq);
+    rfft_dit(odd, rootsq);
     // compute phases
     let phases = (0..n / 2).scan(F::ONE, |ri, _| {
         let ret = *ri;
         *ri *= root;
         Some(ret)
     });
-    // combine halves with phase transformation
+    // compute phase transformation on halves
     even.iter_mut()
         .zip(odd.iter_mut())
         .zip(phases)
         .for_each(|((e, o), phase)| {
             let t = *o * phase;
-            *o = *e - t;
-            *e += t;
+            (*e, *o) = (*e + t, *e - t);
         });
+}
+
+pub fn rfft_dif<F: TwoAdicField>(vals: &mut [F], root: F) {
+    /*
+    in-place FFT DIF recursion
+    */
+    let n = vals.len();
+    assert!(n.is_power_of_two());
+    assert!(root.exp_power_of_2(n.trailing_zeros() as usize) == F::ONE);
+    // base case
+    if n == 1 {
+        assert!(root == F::ONE);
+        return;
+    }
+    // split problem into even and odd halves
+    let (lo, hi) = vals.split_at_mut(n / 2);
+    // compute phases
+    let phases = (0..n / 2).scan(F::ONE, |ri, _| {
+        let ret = *ri;
+        *ri *= root;
+        Some(ret)
+    });
+    // apply phase transformation on halves
+    lo.iter_mut()
+        .zip(hi.iter_mut())
+        .zip(phases)
+        .for_each(|((l, h), phase)| {
+            (*l, *h) = (*l + *h, (*l - *h) * phase);
+        });
+    // recurse on halves
+    let rootsq = root * root;
+    rfft_dif(lo, rootsq); // root not modified
+    rfft_dif(hi, rootsq); // root modified
+                          // interleave frequencies
+    skipswap(lo, hi);
+}
+
+fn skipswap<F: TwoAdicField>(even: &mut [F], odd: &mut [F]) {
+    even.iter_mut()
+        .skip(1)
+        .step_by(2)
+        .zip(odd.iter_mut().step_by(2))
+        .for_each(|(e, o)| std::mem::swap(e, o));
 }
 
 pub fn permute<F: TwoAdicField, const N: usize>(vals: &mut [F; N]) {
@@ -142,21 +221,22 @@ pub fn interleave<F: TwoAdicField>(val: &mut [F]) {
 #[cfg(test)]
 mod test {
     use p3_field::AbstractField;
-    use crate::dft::{dft,idft};
+
     use super::*;
+    use crate::dft::{dft, idft};
     type F = crate::fp17::Fp17;
-    use unroll::unroll_for_loops;
     use rand::Rng;
+    use unroll::unroll_for_loops;
     #[test]
     #[unroll_for_loops]
     fn test_fft_all_simple() {
         for p2 in 1..4 {
-            let mut vals = [F::ZERO; 1<<p2];
+            let mut vals = [F::ZERO; 1 << p2];
             vals[0] = F::ONE;
             let vals_0 = vals.clone();
             let vals_dft = dft(vals);
             fft(&mut vals);
-            assert_eq!(vals, [F::ONE; 1<<p2]);
+            assert_eq!(vals, [F::ONE; 1 << p2]);
             assert_eq!(vals, vals_dft);
             let vals_idft = idft(vals);
             ifft(&mut vals);
@@ -169,7 +249,7 @@ mod test {
     fn test_fft_all_random() {
         for p2 in 1..4 {
             let mut rng = rand::thread_rng();
-            let mut vals:[F;1<<p2]=rng.gen(); 
+            let mut vals: [F; 1 << p2] = rng.gen();
             let vals_0 = vals.clone();
             let vals_dft = dft(vals);
             fft(&mut vals);
@@ -184,7 +264,7 @@ mod test {
     #[unroll_for_loops]
     fn test_dft_rfft() {
         for p2 in 1..4 {
-            let mut vals = [F::ZERO; 1<<p2];
+            let mut vals = [F::ZERO; 1 << p2];
             vals[0] = F::ONE;
             let vals2 = dft(vals);
             fft(&mut vals);
@@ -214,13 +294,15 @@ mod test {
     #[unroll_for_loops]
     fn test_fft_ifft_random() {
         for p2 in 1..4 {
-            let mut rng = rand::thread_rng();
-            let mut aa = [F::default(); 1<<p2];
-            aa.iter_mut().for_each(|a| *a = F::new(rng.gen()));
-            let aa_0 = aa;
-            fft(&mut aa);
-            ifft(&mut aa);
-            assert_eq!(aa, aa_0);
+            for _ in 0..100 {
+                let mut rng = rand::thread_rng();
+                let mut aa = [F::default(); 1 << p2];
+                aa.iter_mut().for_each(|a| *a = F::new(rng.gen()));
+                let aa_0 = aa;
+                fft(&mut aa);
+                ifft(&mut aa);
+                assert_eq!(aa, aa_0);
+            }
         }
     }
 }
