@@ -96,6 +96,110 @@ where
     (g, y - z * x, x)
 }
 
+pub fn gcd_u64(a: u64, b: u64) -> (u64, i64, i64) {
+    if a == 0 {
+        return (b, 0, 1);
+    }
+    if a == 1 {
+        return (1, 1, 0);
+    }
+    let (q, r) = (b / a, b % a); // hopefully the compiler gets the hint that this is a single division
+    let (g, x, y) = gcd_u64(r, a); // TODO: compare perf vs while loop
+    (g, y - (q as i64) * x, x)
+}
+
+pub fn try_inverse_u64(a: u64, m: u64) -> Option<u64> {
+    let (g, x, _) = gcd_u64(a, m);
+    if g == 1 {
+        if x < 0 {
+            Some(m - (-x as u64))
+        } else {
+            Some(x as u64)
+        }
+    } else {
+        None
+    }
+}
+
+pub fn try_inverse_u64_loop(mut a: u64,mut b: u64) -> Option<u64> {
+    assert!(a < b);
+    if a == 0 {
+        return None;
+    }
+    if a == 1 {
+        return Some(1);
+    }
+    let (mut x,mut y) = (1 as i64,0 as i64);
+    while b!=0 {
+        let (q,r) = (a/b, a%b);
+        (a,b) = (b,r);
+        (x,y) = (y,x-(q as i64)*y);
+    }
+    if a == 1 {
+        if x < 0 {
+            Some(b - (-x as u64))
+        } else {
+            Some(x as u64)
+        }
+    } else {
+        None
+    }
+}
+
+pub fn try_inverse_u_loop<UInt,IInt>(mut a: UInt,mut b: UInt) -> Option<UInt> 
+where
+    UInt: Copy
+        + Eq
+        + Rem<Output = UInt>
+        + Div<Output = UInt>
+        + Mul<Output = UInt>
+        + Add<Output = UInt>
+        + Sub<Output = UInt>
+        + From<u8>
+        + TryFrom<IInt>,
+    IInt: Copy
+        + Eq
+        + Rem<Output = IInt>
+        + Div<Output = IInt>
+        + Sub<Output = IInt>
+        + Mul<Output = IInt>
+        + Add<Output = IInt>
+        + From<u8>
+        + TryFrom<UInt>
+        + PartialOrd<IInt>
+        + Neg<Output = IInt>,
+{
+    if a == UInt::from(0) {
+        return None;
+    }
+    if a == UInt::from(1) {
+        return Some(UInt::from(1));
+    }
+    let (mut x,mut y) = (IInt::from(1),IInt::from(0));
+    while b!=UInt::from(0) {
+        let (q,r) = (a/b, a%b);
+        (a,b) = (b,r);
+        let z = IInt::try_from(q).unwrap_or_else(|_| panic!("Failed to convert q to IInt"));
+        (x,y) = (y,x-z*y);
+    }
+    if a == UInt::from(1) {
+        if x < IInt::from(0) {
+            Some(
+                b - (-x)
+                    .try_into()
+                    .unwrap_or_else(|_| panic!("Failed to convert q to UInt")),
+            )
+        } else {
+            Some(
+                x.try_into()
+                    .unwrap_or_else(|_| panic!("Failed to convert q to UInt")),
+            )
+        }
+    } else {
+        None
+    }
+}
+
 pub fn inverse_u<UInt, IInt>(a: UInt, m: UInt) -> Option<UInt>
 where
     UInt: Copy
