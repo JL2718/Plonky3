@@ -3,7 +3,7 @@ use p3_baby_bear::BabyBear;
 use p3_field::AbstractField;
 use p3_field_testing::bench_func::{
     benchmark_add_latency, benchmark_add_throughput, benchmark_inv, benchmark_iter_sum,
-    benchmark_sub_latency, benchmark_sub_throughput,
+    benchmark_sub_latency, benchmark_sub_throughput, benchmark_mul
 };
 
 type F = BabyBear;
@@ -15,6 +15,8 @@ fn bench_field(c: &mut Criterion) {
     benchmark_iter_sum::<F, 4, REPS>(c, name);
     benchmark_iter_sum::<F, 8, REPS>(c, name);
     benchmark_iter_sum::<F, 12, REPS>(c, name);
+    
+    benchmark_mul::<F>(c, name);
 
     // Note that each round of throughput has 10 operations
     // So we should have 10 * more repitions for latency tests.
