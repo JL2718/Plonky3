@@ -46,7 +46,8 @@ impl BabyBear {
     /// create a new `BabyBear` from a canonical `u32`.
     #[inline]
     pub(crate) const fn new(n: u32) -> Self {
-        Self { value: to_monty(n) }
+
+        Self { value: n%P } // keep in canonical form
     }
 }
 
@@ -111,17 +112,17 @@ impl AbstractField for BabyBear {
     type F = Self;
 
     fn zero() -> Self {
-        Self { value: MONTY_ZERO }
+        Self { value: 0 }
     }
     fn one() -> Self {
-        Self { value: MONTY_ONE }
+        Self { value: 1 }
     }
     fn two() -> Self {
-        Self { value: MONTY_TWO }
+        Self { value: 2 }
     }
     fn neg_one() -> Self {
         Self {
-            value: MONTY_NEG_ONE,
+            value: P-1,
         }
     }
 
@@ -165,14 +166,12 @@ impl AbstractField for BabyBear {
 
     #[inline]
     fn from_wrapped_u32(n: u32) -> Self {
-        Self { value: to_monty(n) }
+        Self { value: n % P }
     }
 
     #[inline]
-    fn from_wrapped_u64(n: u64) -> Self {
-        Self {
-            value: to_monty_64(n),
-        }
+    fn from_wrapped_u64(n: u64) -> Self { // wrapped means n % P ?
+        Self::from_canonical_u32((n %P as u64) as u32)
     }
 
     #[inline]
@@ -268,7 +267,7 @@ impl PrimeField32 for BabyBear {
 
     #[inline]
     fn as_canonical_u32(&self) -> u32 {
-        from_monty(self.value)
+        self.value
     }
 }
 
@@ -316,19 +315,19 @@ impl Add for BabyBear {
 
     #[inline]
     fn add(self, rhs: Self) -> Self {
-        let mut sum = self.value + rhs.value;
-        let (corr_sum, over) = sum.overflowing_sub(P);
-        if !over {
-            sum = corr_sum;
-        }
-        Self { value: sum }
+        let mut r = self.clone();
+        r+=rhs;
+        r
     }
 }
 
 impl AddAssign for BabyBear {
     #[inline]
     fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
+        self.value += rhs.value;
+        if self.value >= P {
+            self.value -= P;
+        }
     }
 }
 
@@ -344,17 +343,16 @@ impl Sub for BabyBear {
 
     #[inline]
     fn sub(self, rhs: Self) -> Self {
-        let (mut diff, over) = self.value.overflowing_sub(rhs.value);
-        let corr = if over { P } else { 0 };
-        diff = diff.wrapping_add(corr);
-        BabyBear { value: diff }
+        let mut r = self.clone();
+        r-=rhs;
+        r
     }
 }
 
 impl SubAssign for BabyBear {
     #[inline]
     fn sub_assign(&mut self, rhs: Self) {
-        *self = *self - rhs;
+        *self += rhs.neg();
     }
 }
 
@@ -363,7 +361,7 @@ impl Neg for BabyBear {
 
     #[inline]
     fn neg(self) -> Self::Output {
-        Self::zero() - self
+        Self{value: P - self.value}
     }
 }
 
@@ -372,10 +370,7 @@ impl Mul for BabyBear {
 
     #[inline]
     fn mul(self, rhs: Self) -> Self {
-        let long_prod = self.value as u64 * rhs.value as u64;
-        Self {
-            value: monty_reduce(long_prod),
-        }
+        Self::from_wrapped_u64(self.value as u64 * rhs.value as u64)
     }
 }
 
